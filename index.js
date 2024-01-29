@@ -8,22 +8,12 @@ require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 
-//CORS CONFIG FILE
-const corsConfig = {
-  origin: ["http://localhost:5174", "lowly-key.surge.sh"],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-};
-
 // middleware
 app.use(cors());
 app.use(express.json());
-app.use(cors(corsConfig));
-app.use(cookieParser());
-app.use(express.static("public"));
 
 //MONGODB CONNECTION
-const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.6kbuzrn.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -38,23 +28,8 @@ async function run() {
     ///////////   DATABASE   //////////
     ///////////////////////////////////
     const userCollection = client
-      .db("Dream-Finder-DB")
-      .collection("userCollection");
-
-    ///////////////////////////////////
-    ///////////     API     //////////
-    ///////////////////////////////////
-
-    ///////////     JWT     //////////
-
-    // create jwt token
-    app.post("/jwt", (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "3h",
-      });
-      res.send({ token });
-    });
+      .db("DreamFinder")
+      .collection("UserCollection");
 
     ///////////   MY  MIDDLEWARE     //////////
 
@@ -76,10 +51,25 @@ async function run() {
       });
     };
 
+    ///////////////////////////////////
+    ///////////     API     //////////
+    ///////////////////////////////////
+
+    ///////////     JWT     //////////
+
+    // create jwt token
+    app.post("/create/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "3h",
+      });
+      res.send({ token });
+    });
+
     ///////////     USERS     //////////
 
     // create user
-    app.post("/users", async (req, res) => {
+    app.post("/create/users", async (req, res) => {
       // get user email form client side
       const user = req.body;
       // create user email query
@@ -99,7 +89,7 @@ async function run() {
     });
 
     // get all user
-    app.get("/users", async (req, res) => {
+    app.get("/get/users", async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
