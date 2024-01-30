@@ -3,7 +3,6 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const port = process.env.PORT || 5000;
@@ -69,7 +68,7 @@ async function run() {
     ///////////     USERS     //////////
 
     // create user
-    app.post("/create/users", async (req, res) => {
+    app.post("/create/user", async (req, res) => {
       // get user email form client side
       const user = req.body;
       // create user email query
@@ -79,7 +78,7 @@ async function run() {
       // if user already exist in DB, then return with insertedId: null
       if (isUserExist) {
         return res.send({
-          message: "user already exists in Dream-Finder-DB",
+          message: "user already exists in DreamFinder",
           insertedId: null,
         });
       }
@@ -91,6 +90,13 @@ async function run() {
     // get all user
     app.get("/get/users", async (req, res) => {
       const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.delete("/delete/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.deleteOne(query);
       res.send(result);
     });
 
