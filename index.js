@@ -7,9 +7,21 @@ require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 
+//CORS CONFIG FILE
+const corsConfig = {
+  origin: [
+      'http://localhost:3000',
+      'https://dream-finder.vercel.app',
+      'https://dream-finder-development.netlify.app/'
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+};
+
 // middleware
 app.use(cors());
 app.use(express.json());
+app.use(cors(corsConfig));
 
 //MONGODB CONNECTION
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
