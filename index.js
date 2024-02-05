@@ -10,12 +10,12 @@ const port = process.env.PORT || 5000;
 //CORS CONFIG FILE
 const corsConfig = {
   origin: [
-      'http://localhost:3000',
-      'https://dream-finder.vercel.app',
-      'https://dream-finder-development.netlify.app/'
+    "http://localhost:3000",
+    "https://dream-finder.vercel.app",
+    "https://dream-finder-development.netlify.app",
   ],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 };
 
 // middleware
@@ -115,11 +115,24 @@ async function run() {
       res.send(result);
     });
 
-    ///////////     company     //////////
+    ///////////     COMPANY     //////////
 
     // create company entries in db with details
     app.post("/create/company", async (req, res) => {
+      // get company info from client side
       const company = req.body;
+      // create company email query
+      const query = { companyEmail: company.companyEmail };
+      // get company from DB
+      const isCompanyExist = await companyCollection.findOne(query);
+      // if company already exist in DB, then return with insertedId: null
+      if (isCompanyExist) {
+        return res.send({
+          message: "company already exists in DreamFinder DB",
+          insertedId: null,
+        });
+      }
+      // if company don't exist in DB, then insert company in DB
       const result = await companyCollection.insertOne(company);
       res.send(result);
     });
