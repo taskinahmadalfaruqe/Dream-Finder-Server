@@ -10,12 +10,12 @@ const port = process.env.PORT || 5000;
 //CORS CONFIG FILE
 const corsConfig = {
   origin: [
-      'http://localhost:3000',
-      'https://dream-finder.vercel.app',
-      'https://dream-finder-development.netlify.app/'
+    "http://localhost:3000",
+    "https://dream-finder.vercel.app",
+    "https://dream-finder-development.netlify.app",
   ],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 };
 
 // middleware
@@ -41,6 +41,9 @@ async function run() {
     const userCollection = client
       .db("DreamFinder")
       .collection("UserCollection");
+    const companyCollection = client
+      .db("DreamFinder")
+      .collection("CompanyCollection");
 
     ///////////   MY  MIDDLEWARE     //////////
 
@@ -109,6 +112,42 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    ///////////     COMPANY     //////////
+
+    // create company entries in db with details
+    app.post("/create/company", async (req, res) => {
+      // get company info from client side
+      const company = req.body;
+      // create company email query
+      const query = { companyEmail: company.companyEmail };
+      // get company from DB
+      const isCompanyExist = await companyCollection.findOne(query);
+      // if company already exist in DB, then return with insertedId: null
+      if (isCompanyExist) {
+        return res.send({
+          message: "company already exists in DreamFinder DB",
+          insertedId: null,
+        });
+      }
+      // if company don't exist in DB, then insert company in DB
+      const result = await companyCollection.insertOne(company);
+      res.send(result);
+    });
+
+    // get all companies info
+    app.get("/get/companies", async (req, res) => {
+      const result = await companyCollection.find().toArray();
+      res.send(result);
+    });
+
+    // delete a single company entries from db
+    app.delete("/delete/company/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await companyCollection.deleteOne(query);
       res.send(result);
     });
 
