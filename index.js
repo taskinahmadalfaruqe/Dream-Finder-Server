@@ -29,6 +29,9 @@ async function run() {
     const userCollection = client
       .db("DreamFinder")
       .collection("UserCollection");
+    const companyCollection = client
+      .db("DreamFinder")
+      .collection("CompanyCollection");
 
     ///////////   MY  MIDDLEWARE     //////////
 
@@ -97,6 +100,29 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    ///////////     company     //////////
+
+    // create company entries in db with details
+    app.post("/create/company", async (req, res) => {
+      const company = req.body;
+      const result = await companyCollection.insertOne(company);
+      res.send(result);
+    });
+
+    // get all companies info
+    app.get("/get/companies", async (req, res) => {
+      const result = await companyCollection.find().toArray();
+      res.send(result);
+    });
+
+    // delete a single company entries from db
+    app.delete("/delete/company/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await companyCollection.deleteOne(query);
       res.send(result);
     });
 
