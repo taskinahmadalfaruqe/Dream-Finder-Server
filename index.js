@@ -108,10 +108,25 @@ async function run() {
       res.send(result);
     });
 
+    // delete a single user
     app.delete("/delete/user/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // update user info
+    app.put("/update/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const userInfo = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const result = await userCollection.updateOne(
+        filter,
+        { $set: userInfo },
+        options
+      );
       res.send(result);
     });
 
