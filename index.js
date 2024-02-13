@@ -38,12 +38,8 @@ async function run() {
     ///////////////////////////////////
     ///////////   DATABASE   //////////
     ///////////////////////////////////
-    const userCollection = client
-      .db("DreamFinder")
-      .collection("UserCollection");
-    const companyCollection = client
-      .db("DreamFinder")
-      .collection("CompanyCollection");
+    const userCollection = client.db("DreamFinder").collection("UserCollection");
+    const companyCollection = client.db("DreamFinder").collection("CompanyCollection");
 
     ///////////   MY  MIDDLEWARE     //////////
 
@@ -183,7 +179,7 @@ async function run() {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
-
+    
     // delete a single user
     app.delete("/delete/user/:email", async (req, res) => {
       const email = req.params.email;
