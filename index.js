@@ -84,7 +84,49 @@ async function run() {
         next();
       });
     };
+    // admin verify middleware
+    const verifyAdmin = async (req, res, next) => {
+      // get decoded email
+      const email = req.decodedToken?.email;
+      // create query
+      const query = { email: email };
+      // find user by there query
+      const user = await userCollection.findOne(query);
+      // get user role
+      const isAdmin = user?.role === "admin";
+      // if user role not admin, then return
+      console.log(" HIT: verify admin middleware");
 
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      console.log("admin verified");
+      // if all ok, then next()
+      next();
+    };
+
+    // company verify middleware
+    const verifyHr = async (req, res, next) => {
+      // get decoded email
+      const email = req.decodedToken?.email;
+      // create query
+      const query = { email: email };
+      // find user by there query
+      const user = await userCollection.findOne(query);
+      // get user role
+      const isHr = user?.role === "hr";
+      // if user role not Hr, then return
+      console.log(" HIT: verify Hr middleware");
+
+      if (!isHr) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      console.log("Hr verified successfully.");
+      // if all ok, then next()
+      next();
+    };
+
+    ///////////////////////////////////
     ///////////     API     //////////
 
     ///////////     JWT     //////////
@@ -96,6 +138,40 @@ async function run() {
         expiresIn: "3h",
       });
       res.send({ token });
+    });
+
+    ///////////     ROLE CHECKER     //////////
+
+    // is admin checker
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      console.log(" HIT: /users/admin/:email");
+      const email = req?.params?.email;
+      if (email !== req?.decodedToken?.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
+
+    // is hr checker
+    app.get("/users/hr/:email", verifyToken, async (req, res) => {
+      console.log(" HIT: /users/hr/:email");
+      const email = req?.params?.email;
+      if (email !== req?.decodedToken?.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let hr = false;
+      if (user) {
+        hr = user?.role === "hr";
+      }
+      res.send({ hr });
     });
 
     ///////////     USERS     //////////
@@ -171,18 +247,47 @@ async function run() {
     });
 
     // get all companies info
-    app.get("/get/companies", async (req, res) => {
-      const result = await companyCollection.find().toArray();
-      res.send(result);
-    });
+    app.get(
+      "/get/companies/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const result = await companyCollection.find().toArray();
+        res.send(result);
+      }
+    );
 
     // delete a single company entries from db
-    app.delete("/delete/company/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const result = await companyCollection.deleteOne(query);
-      res.send(result);
-    });
+    app.delete(
+      "/delete/company/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await companyCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
+
+    // update a single company details info
+    app.put(
+      "/update/company/:email",
+      verifyToken,
+      verifyHr,
+      async (req, res) => {
+        const email = req.params.email;
+        const updatedInfo = req.body;
+        const filter = { email: email };
+        const options = { upsert: true };
+        const result = await companyCollection.updateOne(
+          filter,
+          { $set: updatedInfo },
+          options
+        );
+        res.send(result);
+      }
+    );
 
     // UPLOAD RESUME AND COVER LETTER
     app.post("/uploadResume", async (req, res) => {
