@@ -24,7 +24,7 @@ app.use(express.json());
 app.use(cors(corsConfig));
 
 //MONGODB CONNECTION
-const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://halimatussadia:243392@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -33,17 +33,37 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const uri2 = `mongodb+srv://service-squad:LfgXUdOgFlY0bo3b@cluster0.3azmgms.mongodb.net/?retryWrites=true&w=majority`;
+const client2 = new MongoClient(uri2, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+//  FUNCTION
 async function run() {
   try {
-    ///////////////////////////////////
     ///////////   DATABASE   //////////
-    ///////////////////////////////////
     const userCollection = client
       .db("DreamFinder")
       .collection("UserCollection");
     const companyCollection = client
       .db("DreamFinder")
       .collection("CompanyCollection");
+    const applicationsCollection = client
+      .db("DreamFinder")
+      .collection("applications");
+
+    const jobsCollectionOld = client2.db("serviceSquadDB").collection("jobs");
+    const jobsCollection = client.db("DreamFinder").collection("jobs");
+    const bookmarks = client.db("serviceSquadDB").collection("bookmarks");
+    const newResumeCollection = client2
+      .db("serviceSquadDB")
+      .collection("newResume");
+    const appliedJobsCollection = client
+      .db("serviceSquadDB")
+      .collection("applied-jobs");
 
     ///////////   MY  MIDDLEWARE     //////////
 
@@ -64,7 +84,6 @@ async function run() {
         next();
       });
     };
-
     // admin verify middleware
     const verifyAdmin = async (req, res, next) => {
       // get decoded email
@@ -109,7 +128,6 @@ async function run() {
 
     ///////////////////////////////////
     ///////////     API     //////////
-    ///////////////////////////////////
 
     ///////////     JWT     //////////
 
@@ -271,6 +289,167 @@ async function run() {
       }
     );
 
+    // UPLOAD RESUME AND COVER LETTER
+    app.post("/uploadResume", async (req, res) => {
+      const data = req.body;
+      const result = await newResumeCollection.insertOne(data);
+      console.log(result);
+      res.status(200).send(result);
+    });
+
+    // GET ALL APPLICATIONS IDS
+    app.get("/retrieveResume", async (req, res) => {
+      const { user } = req.query;
+      const query = {
+        user,
+      };
+      let ids = [];
+      const result = await newResumeCollection
+        .find(query)
+        .sort({ appliedDate: -1 })
+        .toArray();
+      if (result) {
+        result.map((item) => ids.push(item._id.toString()));
+      }
+
+      res.send(ids);
+    });
+
+    // GET SINGLE APPLICATION INFO
+    app.get("/retrieveResume/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = {
+        _id: new ObjectId(id),
+      };
+      const result = await newResumeCollection.findOne(query);
+      res.send({ result });
+    });
+
+    // GET SINGLE JOB INFO
+    app.get("/jobDetails/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await jobsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    // CHECK SPECIFIC JOB APPLIED OR NOT
+    app.get("/checkApplied", async (req, res) => {
+      const { user, jobId } = req.query;
+      const query = {
+        user,
+        jobId,
+      };
+      const result = await newResumeCollection.find(query).toArray();
+      res.send({ isApplied: result.length });
+    });
+
+    // GET ALL JOB POST (SEARCH AND SORT)
+    app.get("/api/v1/jobs", async (req, res) => {
+      const {
+        category,
+        location,
+        minSalary,
+        maxSalary,
+        type,
+        page,
+        preference,
+        postedDate,
+      } = req.query;
+      const pageNumber = Number(page);
+      const minSalaryNumber = Number(minSalary);
+      const maxSalaryNumber = Number(maxSalary);
+      const isPreference = preference === "true";
+
+      let typeArray;
+      if (type) {
+        typeArray = type.split(",").map((item) => item);
+      }
+
+      const query = {};
+
+      if (category) {
+        query.category = { $regex: new RegExp(`${category}`, "i") };
+      }
+
+      if (postedDate) {
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - parseInt(postedDate));
+
+        // Format the date 15 days ago as "YYYY-MM-DD"
+        const formattedDaysAgo = formatDate(daysAgo);
+
+        query.posted_date = {
+          $gte: formattedDaysAgo,
+        };
+      }
+
+      if (typeArray && typeArray.length > 0) {
+        query.type = { $in: typeArray };
+      }
+      if (!isNaN(minSalary)) {
+        query.minSalary = { $gte: minSalaryNumber };
+      }
+      if (!isNaN(maxSalary)) {
+        query.maxSalary = { $lte: maxSalaryNumber };
+      }
+      if (location) {
+        query.location = { $regex: new RegExp(location, "i") };
+      }
+
+      const sortOptions = isPreference ? { viewCount: -1 } : {};
+      const foundedJobs = await jobsCollection.find(query).toArray();
+      const result = await jobsCollection
+        .find(query)
+        .sort(sortOptions)
+        .skip((pageNumber - 1) * 5)
+        .limit(5)
+        .toArray();
+      res.send({ result, jobCount: foundedJobs.length });
+    });
+
+    // GET USER'S BOOKMARKS
+    app.get("/bookmark/:user", async (req, res) => {
+      const { user } = req.params;
+      const query = { user };
+      const result = await bookmarks.find(query).toArray();
+      res.send(result);
+    });
+
+    // SAVE TO BOOKMARK
+    app.post("/bookmark", async (req, res) => {
+      const job = req.body;
+      const result = await bookmarks.insertOne(job);
+      res.send(result);
+    });
+
+    // REMOVE BOOKMARK FROM DASHBOARD
+    app.delete("/bookmark/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = {
+        _id: new ObjectId(id),
+      };
+      const result = await bookmarks.deleteOne(query);
+      res.send(result);
+    });
+
+    // REMOVE BOOKMARK FROM ALL JOB PAGE
+    app.delete("/bookmarkDelete", async (req, res) => {
+      const { user, id } = req.query;
+      const query = {
+        user,
+        jobId: id,
+      };
+      const result = await bookmarks.deleteOne(query);
+      res.send(result);
+    });
+
+    app.get("/", async (req, res) => {
+      // const jobs = await newResumeCollection.find().toArray()
+      // const result = await applicationsCollection.insertMany(jobs)
+      // // // console.log(jobs);
+      // res.send(result);
+    });
+
     // end-point finished
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
@@ -282,9 +461,9 @@ async function run() {
 run().catch(console.dir);
 
 // SERVER STARTING POINT
-app.get("/", (req, res) => {
-  res.send("Dream Finder Server Is Running");
-});
+// app.get("/", (req, res) => {
+//   res.send("Dream Finder Server Is Running");
+// });
 app.listen(port, () => {
   console.log(`Dream Finder Server Is Sitting On Port ${port}`);
 });
