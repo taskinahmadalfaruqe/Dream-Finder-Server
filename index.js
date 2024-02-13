@@ -23,18 +23,11 @@ app.use(cors());
 app.use(express.json());
 app.use(cors(corsConfig));
 
+
 //MONGODB CONNECTION
-const uri = `mongodb+srv://halimatussadia:243392@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-const uri2 = `mongodb+srv://service-squad:LfgXUdOgFlY0bo3b@cluster0.3azmgms.mongodb.net/?retryWrites=true&w=majority`;
-const client2 = new MongoClient(uri2, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
@@ -45,25 +38,14 @@ const client2 = new MongoClient(uri2, {
 async function run() {
   try {
     ///////////   DATABASE   //////////
-    const userCollection = client
-      .db("DreamFinder")
-      .collection("UserCollection");
-    const companyCollection = client
-      .db("DreamFinder")
-      .collection("CompanyCollection");
-    const applicationsCollection = client
-      .db("DreamFinder")
-      .collection("applications");
-
-    const jobsCollectionOld = client2.db("serviceSquadDB").collection("jobs");
+    const userCollection = client.db("DreamFinder").collection("UserCollection");
+    const companyCollection = client.db("DreamFinder").collection("CompanyCollection");
+    const applicationsCollection = client.db("DreamFinder").collection("applications");
+    const jobsCollectionOld = client.db("serviceSquadDB").collection("jobs");
     const jobsCollection = client.db("DreamFinder").collection("jobs");
     const bookmarks = client.db("serviceSquadDB").collection("bookmarks");
-    const newResumeCollection = client2
-      .db("serviceSquadDB")
-      .collection("newResume");
-    const appliedJobsCollection = client
-      .db("serviceSquadDB")
-      .collection("applied-jobs");
+    const newResumeCollection = client.db("serviceSquadDB").collection("newResume");
+    const appliedJobsCollection = client.db("serviceSquadDB").collection("applied-jobs");
 
     ///////////   MY  MIDDLEWARE     //////////
 
