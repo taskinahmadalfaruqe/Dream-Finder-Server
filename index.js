@@ -33,14 +33,7 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-const uri2 = `mongodb+srv://service-squad:LfgXUdOgFlY0bo3b@cluster0.3azmgms.mongodb.net/?retryWrites=true&w=majority`;
-const client2 = new MongoClient(uri2, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+
 //  FUNCTION
 async function run() {
   try {
@@ -55,15 +48,10 @@ async function run() {
       .db("DreamFinder")
       .collection("applications");
 
-    const jobsCollectionOld = client2.db("serviceSquadDB").collection("jobs");
+    // const jobsCollectionOld = client2.db("serviceSquadDB").collection("jobs");
     const jobsCollection = client.db("DreamFinder").collection("jobs");
-    const bookmarks = client.db("serviceSquadDB").collection("bookmarks");
-    const newResumeCollection = client2
-      .db("serviceSquadDB")
-      .collection("newResume");
-    const appliedJobsCollection = client
-      .db("serviceSquadDB")
-      .collection("applied-jobs");
+    const bookmarks = client.db("DreamFinder").collection("bookmarks");
+    
 
     ///////////   MY  MIDDLEWARE     //////////
 
@@ -187,7 +175,7 @@ async function run() {
     // UPLOAD RESUME AND COVER LETTER
     app.post("/uploadResume", async (req, res) => {
       const data = req.body;
-      const result = await newResumeCollection.insertOne(data);
+      const result = await applicationsCollection.insertOne(data);
       console.log(result);
       res.status(200).send(result);
     });
@@ -199,7 +187,7 @@ async function run() {
         user,
       };
       let ids = [];
-      const result = await newResumeCollection
+      const result = await applicationsCollection
         .find(query)
         .sort({ appliedDate: -1 })
         .toArray();
@@ -216,7 +204,7 @@ async function run() {
       const query = {
         _id: new ObjectId(id),
       };
-      const result = await newResumeCollection.findOne(query);
+      const result = await applicationsCollection.findOne(query);
       res.send({ result });
     });
 
@@ -234,7 +222,7 @@ async function run() {
         user,
         jobId,
       };
-      const result = await newResumeCollection.find(query).toArray();
+      const result = await applicationsCollection.find(query).toArray();
       res.send({ isApplied: result.length });
     });
 
@@ -339,10 +327,7 @@ async function run() {
     });
 
     app.get("/", async (req, res) => {
-      // const jobs = await newResumeCollection.find().toArray()
-      // const result = await applicationsCollection.insertMany(jobs)
-      // // // console.log(jobs);
-      // res.send(result);
+     res.send("Hello World")
     });
 
     // end-point finished
