@@ -35,6 +35,12 @@ const client = new MongoClient(uri, {
 });
 
 //  FUNCTION
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 async function run() {
   try {
     const userCollection = client.db("DreamFinder").collection("UserCollection");
@@ -253,7 +259,7 @@ app.get("/api/v1/jobs", async (req, res) => {
     const daysAgo = new Date();
     daysAgo.setDate(daysAgo.getDate() - parseInt(postedDate));
 
-    // Format the date 15 days ago as "YYYY-MM-DD"
+    
     const formattedDaysAgo = formatDate(daysAgo);
 
     query.posted_date = {
