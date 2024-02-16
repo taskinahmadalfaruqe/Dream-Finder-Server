@@ -74,17 +74,60 @@ async function run() {
 
     // admin verify middleware
     const verifyAdmin = async (req, res, next) => {
-      // get decoded email
       const email = req.decodedToken?.email;
-      // create query
       const query = { email: email };
-      // find user by there query
       const user = await userCollection.findOne(query);
-      // get user role
       const isAdmin = user?.role === "admin";
-      // if user role not admin, then return
       console.log(" HIT: verify admin middleware");
     };
+
+    // admin verify middleware
+    const verifyHr = async (req, res, next) => {
+      const email = req.decodedToken?.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isHr = user?.role === "hr";
+      console.log(" HIT: verify hr middleware");
+
+      if (!isHr) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      console.log("hr verified");
+      // if all ok, then next()
+      next();
+    };
+
+    // is admin checker
+    app.get("/user/admin-check/:email", verifyToken, async (req, res) => {
+      console.log(" HIT: /users/admin-check/:email");
+      const email = req?.params?.email;
+      if (email !== req?.decodedToken?.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
+
+    // is hr checker
+    app.get("/user/hr-check/:email", verifyToken, async (req, res) => {
+      console.log(" HIT: /users/hr-check/:email");
+      const email = req?.params?.email;
+      if (email !== req?.decodedToken?.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let hr = false;
+      if (user) {
+        hr = user?.role === "hr";
+      }
+      res.send({ hr });
+    });
 
     ///////////     JWT     //////////
 
