@@ -390,6 +390,28 @@ async function run() {
       res.send(result);
     });
 
+
+     // stat count 
+
+     app.get('/admin-stats',async(req,res)=>{
+      const applicants= await userCollection.estimatedDocumentCount()
+      const companies = await companyCollection.estimatedDocumentCount()
+      const applications = await applicationsCollection.estimatedDocumentCount()
+      const jobs = await jobsCollection.countDocuments()
+      const listOfBookmarks = await bookmarks.countDocuments()
+     
+     
+
+       res.send({
+        applicants,
+        companies,
+        applications,
+        jobs,
+        listOfBookmarks
+      })
+    })
+
+
     app.get("/", (req, res) => {
       res.send({ message: "Welcome To Dream Finder Server" });
     });
