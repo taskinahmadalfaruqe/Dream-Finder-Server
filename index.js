@@ -79,6 +79,14 @@ async function run() {
       const user = await userCollection.findOne(query);
       const isAdmin = user?.role === "admin";
       console.log(" HIT: verify admin middleware");
+
+      if (!isAdmin) {
+        console.log("403 form verifyAdmin");
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      console.log("admin verified");
+      // if all ok, then next()
+      next();
     };
 
     // admin verify middleware
@@ -90,6 +98,8 @@ async function run() {
       console.log(" HIT: verify hr middleware");
 
       if (!isHr) {
+        console.log("403 form verifyHr");
+
         return res.status(403).send({ message: "forbidden access" });
       }
       console.log("hr verified");
@@ -101,7 +111,12 @@ async function run() {
     app.get("/user/admin-check/:email", verifyToken, async (req, res) => {
       console.log(" HIT: /users/admin-check/:email");
       const email = req?.params?.email;
+      console.log("param:", email, "decode:", req.decodedToken?.email);
+
       if (email !== req?.decodedToken?.email) {
+        console.log("in the forbidden block");
+        console.log("403 form admin checker");
+
         return res.status(403).send({ message: "forbidden access" });
       }
       const query = { email: email };
@@ -110,6 +125,7 @@ async function run() {
       if (user) {
         admin = user?.role === "admin";
       }
+      console.log("last block:", { admin });
       res.send({ admin });
     });
 
@@ -118,6 +134,8 @@ async function run() {
       console.log(" HIT: /users/hr-check/:email");
       const email = req?.params?.email;
       if (email !== req?.decodedToken?.email) {
+        console.log("403 form hr checker");
+
         return res.status(403).send({ message: "forbidden access" });
       }
       const query = { email: email };
