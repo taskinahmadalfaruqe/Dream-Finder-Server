@@ -372,6 +372,46 @@ async function run() {
       res.send(filteredJobs);
     });
 
+    // GET MOST 15 VIEWED JOBS IN ALL JOBS
+    app.get("/api/v1/most-viewed15-jobs", async (req, res) => {
+      const result = await jobsCollection
+        .find()
+        .sort({ viewCount: -1 })
+        .limit(15)
+        .toArray();
+      res.send(result);
+    });
+
+    // GET ALL JOBS FOR A PARTICULAR COMPANY BY HR EMAIL
+    app.get(
+      "/api/v1/posted-jobs/:email",
+      verifyToken,
+      verifyHr,
+      async (req, res) => {
+        const query = { company_email: req.params.email };
+        const result = await jobsCollection.find(query).toArray();
+        console.log(result);
+        res.send(result);
+      }
+    );
+
+    // GET ALL JOBS IN ONE API
+    app.get("/get/all-jobs", async (req, res) => {
+      const result = await jobsCollection.find().toArray();
+      res.send(result);
+    });
+
+    // POST A NEW JOB
+    app.post("/api/v1/post-job", verifyToken, verifyHr, async (req, res) => {
+      const data = req.body;
+      console.log(data);
+      // res.send({ message: "hit job post api" });
+      const result = await jobsCollection.insertOne(data);
+      res.send(result);
+    });
+
+    ///////////     BOOKMARKS     //////////
+
     // GET USER'S BOOKMARKS
     app.get("/bookmark/:user", async (req, res) => {
       const { user } = req.params;
