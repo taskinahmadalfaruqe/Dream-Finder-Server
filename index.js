@@ -432,9 +432,12 @@ app.post('/createPayment', async(req, res) =>{
     // GET USER'S BOOKMARKS
     app.get("/bookmark/:user", async (req, res) => {
       const { user } = req.params;
+      const {page} = req.query
+      const pageNumber = Number(page)
       const query = { user };
-      const result = await bookmarks.find(query).toArray();
-      res.send(result);
+      const count = await bookmarks.find(query).toArray()
+      const result = await bookmarks.find(query).skip((pageNumber - 1) * 7).limit(7).toArray();
+      res.send({bookmarks:result, count:count.length});
     });
 
     // SAVE TO BOOKMARK
