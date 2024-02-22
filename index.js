@@ -491,7 +491,7 @@ app.post('/createPayment', async(req, res) =>{
       res.send({ message: "Welcome To Dream Finder Server" });
     });
 
-    app.get("/incrementAppliedCount/:id", async(req, res)=>{
+    app.patch("/incrementAppliedCount/:id", async(req, res)=>{
       const {id} = req.params
       const query = {_id: new ObjectId(id)}
       const appliedPost = await jobsCollection.findOne(query)
