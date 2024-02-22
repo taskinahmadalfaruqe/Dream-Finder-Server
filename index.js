@@ -362,13 +362,14 @@ app.post('/createPayment', async(req, res) =>{
       }
 
       const sortOptions = isPreference ? { viewCount: -1 } : {};
-      const foundedJobs = await jobsCollection.find(query).toArray();
+      const foundedJobs = await jobsCollection.estimatedDocumentCount();
       const result = await jobsCollection
         .find(query)
         .sort(sortOptions)
         .skip((pageNumber - 1) * 9)
         .limit(5)
         .toArray();
+        console.log(foundedJobs);
       res.send({ result, jobCount: foundedJobs.length });
     });
 
@@ -477,9 +478,6 @@ app.post('/createPayment', async(req, res) =>{
       const applications = await applicationsCollection.estimatedDocumentCount()
       const jobs = await jobsCollection.countDocuments()
       const listOfBookmarks = await bookmarks.countDocuments()
-     
-     
-
        res.send({
         applicants,
         companies,
@@ -489,10 +487,24 @@ app.post('/createPayment', async(req, res) =>{
       })
     })
 
+    // app.get("/",async (req, res) => {
+    //   res.send({ message: "Welcome To Dream Finder Server" });
+    //   res.send(result);
+    // });
 
-    app.get("/", (req, res) => {
-      res.send({ message: "Welcome To Dream Finder Server" });
-    });
+    app.get("/incrementAppliedCount/:id", async(req, res)=>{
+      const {id} = req.params
+      const query = {_id: new ObjectId(id)}
+      const appliedPost = await jobsCollection.findOne(query)
+      const prevAppliedCount = appliedPost.appliedCount
+      const updatedCount = {
+        $set:{
+          appliedCount: prevAppliedCount + 1
+        }
+      }
+      const result = await jobsCollection.updateOne(query, updatedCount)
+      res.send(result)
+    })
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
