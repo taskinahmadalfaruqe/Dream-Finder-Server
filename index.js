@@ -369,8 +369,8 @@ app.post('/createPayment', async(req, res) =>{
         .skip((pageNumber - 1) * 9)
         .limit(5)
         .toArray();
-        console.log(foundedJobs);
-      res.send({ result, jobCount: foundedJobs.length });
+
+      res.send({ result, jobCount: foundedJobs });
     });
 
     // GET LAST 2 WEEK POSTED JOB
