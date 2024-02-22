@@ -55,6 +55,7 @@ async function run() {
       .collection("applications");
     const jobsCollection = client.db("DreamFinder").collection("jobs");
     const bookmarks = client.db("DreamFinder").collection("bookmarks");
+    const blockEmailCollection = client.db("DreamFinder").collection("blockEmails");
 
     const verifyToken = (req, res, next) => {
       const tokenWithBearer = req?.headers?.authorization;
@@ -204,9 +205,9 @@ app.post('/createPayment', async(req, res) =>{
     });
 
     // delete a single user
-    app.delete("/delete/user/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
+    app.delete("/delete/user/:id", async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
       res.send(result);
     });
@@ -224,6 +225,61 @@ app.post('/createPayment', async(req, res) =>{
       );
       res.send(result);
     });
+
+    // make admin
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+     // User block
+    app.patch("/users/block/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: "block",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+
+     // company block
+     app.patch("/company/block/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: "block",
+        },
+      };
+      const result = await companyCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+     // get all block emails
+     app.get("/block/email", async (req, res) => {
+      const result = await blockEmailCollection.find().toArray();
+      res.send(result);
+    });
+
+
+    // block email collections 
+
+    app.post('/block/email',async(req,res)=>{
+      const email = req.body
+      const result = await blockEmailCollection.insertOne(email);
+      res.send(result)
+    })
 
     ///////////     COMPANY     //////////
 
@@ -248,10 +304,12 @@ app.post('/createPayment', async(req, res) =>{
       res.send(result);
     });
 
+
     // delete a single company entries from db
-    app.delete("/delete/company/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
+    app.delete("/delete/company/:id", async (req, res) => {
+      const id = req.params.id
+      console.log(id)
+      const query = { _id: new ObjectId(id) };
       const result = await companyCollection.deleteOne(query);
       res.send(result);
     });
@@ -275,7 +333,7 @@ app.post('/createPayment', async(req, res) =>{
         .sort({ appliedDate: -1 })
         .toArray();
       if (result) {
-        result.map(item => ids.push(item._id.toString()));
+        result.map((item) => ids.push(item._id.toString()));
       }
 
       res.send(ids);
@@ -291,10 +349,27 @@ app.post('/createPayment', async(req, res) =>{
       res.send({ result });
     });
 
+
+     // get all jobs info
+     app.get("/get/jobs", async (req, res) => {
+      const result = await jobsCollection.find().toArray();
+      res.send(result);
+    });
+
+
     // GET SINGLE JOB INFO
     app.get("/jobDetails/:id", async (req, res) => {
       const id = req.params.id;
       const result = await jobsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+
+     // delete a single job from db
+     app.delete("/get/jobs/:id", async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollection.deleteOne(query);
       res.send(result);
     });
 
@@ -328,7 +403,7 @@ app.post('/createPayment', async(req, res) =>{
 
       let typeArray;
       if (type) {
-        typeArray = type.split(",").map(item => item);
+        typeArray = type.split(",").map((item) => item);
       }
 
       const query = {};
@@ -469,8 +544,7 @@ app.post('/createPayment', async(req, res) =>{
       res.send(result);
     });
 
-
-     // stat count 
+    // stat count
 
      app.get('/admin-stats',async(req,res)=>{
       const applicants= await userCollection.estimatedDocumentCount()
@@ -487,7 +561,8 @@ app.post('/createPayment', async(req, res) =>{
       })
     })
 
-    app.get("/",async (req, res) => {
+
+    app.get("/", (req, res) => {
       res.send({ message: "Welcome To Dream Finder Server" });
     });
 
