@@ -366,7 +366,7 @@ app.post('/createPayment', async(req, res) =>{
       const result = await jobsCollection
         .find(query)
         .sort(sortOptions)
-        .skip((pageNumber - 1) * 5)
+        .skip((pageNumber - 1) * 9)
         .limit(5)
         .toArray();
       res.send({ result, jobCount: foundedJobs.length });
