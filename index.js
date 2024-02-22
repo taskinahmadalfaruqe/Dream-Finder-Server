@@ -487,10 +487,9 @@ app.post('/createPayment', async(req, res) =>{
       })
     })
 
-    // app.get("/",async (req, res) => {
-    //   res.send({ message: "Welcome To Dream Finder Server" });
-    //   res.send(result);
-    // });
+    app.get("/",async (req, res) => {
+      res.send({ message: "Welcome To Dream Finder Server" });
+    });
 
     app.get("/incrementAppliedCount/:id", async(req, res)=>{
       const {id} = req.params
