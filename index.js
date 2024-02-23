@@ -437,7 +437,7 @@ app.post('/createPayment', async(req, res) =>{
       }
 
       const sortOptions = isPreference ? { viewCount: -1 } : {};
-      const foundedJobs = await jobsCollection.estimatedDocumentCount();
+      const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
         .sort(sortOptions)
@@ -445,7 +445,7 @@ app.post('/createPayment', async(req, res) =>{
         .limit(5)
         .toArray();
 
-      res.send({ result, jobCount: foundedJobs });
+      res.send({ result, jobCount: foundedJobs.length });
     });
 
     // GET LAST 2 WEEK POSTED JOB
