@@ -439,7 +439,7 @@ async function run() {
       }
 
       const sortOptions = isPreference ? { viewCount: -1 } : {};
-      const foundedJobs = await jobsCollection.estimatedDocumentCount();
+      const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
         .sort(sortOptions)
@@ -447,7 +447,7 @@ async function run() {
         .limit(5)
         .toArray();
 
-      res.send({ result, jobCount: foundedJobs });
+      res.send({ result, jobCount: foundedJobs.length });
     });
 
     // GET LAST 2 WEEK POSTED JOB
@@ -579,7 +579,6 @@ async function run() {
   })
 
     // stat count 
-
     app.get('/admin-stats', async (req, res) => {
       const applicants = await userCollection.estimatedDocumentCount()
       const companies = await companyCollection.estimatedDocumentCount()
@@ -594,8 +593,6 @@ async function run() {
         listOfBookmarks
       })
     })
-
-  
 
     app.get("/", (req, res) => {
       res.send({ message: "Welcome To Dream Finder Server" });
