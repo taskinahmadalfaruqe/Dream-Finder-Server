@@ -55,6 +55,8 @@ async function run() {
       .collection("applications");
     const jobsCollection = client.db("DreamFinder").collection("jobs");
     const bookmarks = client.db("DreamFinder").collection("bookmarks");
+    const feedbacksCollection = client.db("DreamFinder").collection("feedbacks");
+    const contactsCollection = client.db("DreamFinder").collection("contacts");
     const blockEmailCollection = client.db("DreamFinder").collection("blockEmails");
 
     const verifyToken = (req, res, next) => {
@@ -151,21 +153,21 @@ async function run() {
 
     ///////////     JWT     //////////
 
-// payment intent
-app.post('/createPayment', async(req, res) =>{
-  const {price} = req.body;
-  const amount = parseInt(price * 100);
-  console.log(amount)
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amount,
-    currency: 'usd',
-    payment_method_types: ['card']
-  });
-  res.send({
-    clientSecret: paymentIntent.client_secret
-  });
+    // payment intent
+    app.post('/createPayment', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      });
 
-});
+    });
 
     // create jwt token
     app.post("/create/jwt", (req, res) => {
@@ -508,12 +510,12 @@ app.post('/createPayment', async(req, res) =>{
     // GET USER'S BOOKMARKS
     app.get("/bookmark/:user", async (req, res) => {
       const { user } = req.params;
-      const {page} = req.query
+      const { page } = req.query
       const pageNumber = Number(page)
       const query = { user };
       const count = await bookmarks.find(query).toArray()
       const result = await bookmarks.find(query).skip((pageNumber - 1) * 7).limit(7).toArray();
-      res.send({bookmarks:result, count:count.length});
+      res.send({ bookmarks: result, count: count.length });
     });
 
     // SAVE TO BOOKMARK
@@ -544,15 +546,46 @@ app.post('/createPayment', async(req, res) =>{
       res.send(result);
     });
 
+    // post to contact
+
+    app.post("/contacts", async (req, res) => {
+      const contacts = req.body;
+      const result = await contactsCollection.insertOne(contacts);
+      res.send(result);
+    });
     // stat count
 
-     app.get('/admin-stats',async(req,res)=>{
-      const applicants= await userCollection.estimatedDocumentCount()
+    // get contacts
+    app.get("/contacts", async (req, res) => {
+      const cursor = contactsCollection.find()
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+    // post to Feedback
+
+    app.post("/feedbacks", async (req, res) => {
+      const feedbacks = req.body;
+      const result = await feedbacksCollection.insertOne(feedbacks);
+      res.send(result);
+    });
+
+    // get FeedBack
+    
+    app.get('/feedbacks', async(req,res) => {
+      const cursor = feedbacksCollection.find()
+      const result = await cursor.toArray();
+      res.send(result);
+  })
+
+    // stat count 
+    app.get('/admin-stats', async (req, res) => {
+      const applicants = await userCollection.estimatedDocumentCount()
       const companies = await companyCollection.estimatedDocumentCount()
       const applications = await applicationsCollection.estimatedDocumentCount()
       const jobs = await jobsCollection.countDocuments()
       const listOfBookmarks = await bookmarks.countDocuments()
-       res.send({
+      res.send({
         applicants,
         companies,
         applications,
@@ -561,18 +594,17 @@ app.post('/createPayment', async(req, res) =>{
       })
     })
 
-
     app.get("/", (req, res) => {
       res.send({ message: "Welcome To Dream Finder Server" });
     });
 
-    app.patch("/incrementAppliedCount/:id", async(req, res)=>{
-      const {id} = req.params
-      const query = {_id: new ObjectId(id)}
+    app.patch("/incrementAppliedCount/:id", async (req, res) => {
+      const { id } = req.params
+      const query = { _id: new ObjectId(id) }
       const appliedPost = await jobsCollection.findOne(query)
       const prevAppliedCount = appliedPost.appliedCount
       const updatedCount = {
-        $set:{
+        $set: {
           appliedCount: prevAppliedCount + 1
         }
       }
