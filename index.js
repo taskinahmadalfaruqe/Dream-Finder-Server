@@ -35,6 +35,15 @@ const client = new MongoClient(uri, {
   },
 });
 
+const applicationSubmissionDbUri = `mongodb+srv://service-squad:LfgXUdOgFlY0bo3b@cluster0.3azmgms.mongodb.net/?retryWrites=true&w=majority`;
+const applicationSubmissionDbClient = new MongoClient(applicationSubmissionDbUri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+
 //  FUNCTION
 function formatDate(date) {
   const year = date.getFullYear();
@@ -58,6 +67,10 @@ async function run() {
     const feedbacksCollection = client.db("DreamFinder").collection("feedbacks");
     const contactsCollection = client.db("DreamFinder").collection("contacts");
     const blockEmailCollection = client.db("DreamFinder").collection("blockEmails");
+
+    const resumeCollection = applicationSubmissionDbClient
+    .db("serviceSquadDB")
+    .collection("newResume");
 
     const verifyToken = (req, res, next) => {
       const tokenWithBearer = req?.headers?.authorization;
@@ -319,26 +332,29 @@ async function run() {
     // UPLOAD RESUME AND COVER LETTER
     app.post("/uploadResume", async (req, res) => {
       const data = req.body;
-      const result = await applicationsCollection.insertOne(data);
+      const result = await resumeCollection.insertOne(data);
       res.status(200).send(result);
     });
 
     // GET ALL APPLICATIONS IDS
     app.get("/retrieveResume", async (req, res) => {
-      const { user } = req.query;
+      const { user, page } = req.query;
+      const pageNumber = Number(page)
       const query = {
         user,
       };
       let ids = [];
-      const result = await applicationsCollection
+      const result = await resumeCollection
         .find(query)
         .sort({ appliedDate: -1 })
+        .skip((pageNumber - 1) * 8)
+        .limit(8)
         .toArray();
       if (result) {
         result.map((item) => ids.push(item._id.toString()));
       }
-
-      res.send(ids);
+      const count = await resumeCollection.countDocuments(query)
+      res.send({ ids, count});
     });
 
     // GET SINGLE APPLICATION INFO
@@ -347,7 +363,7 @@ async function run() {
       const query = {
         _id: new ObjectId(id),
       };
-      const result = await applicationsCollection.findOne(query);
+      const result = await resumeCollection.findOne(query);
       res.send({ result });
     });
 
@@ -382,7 +398,7 @@ async function run() {
         user,
         jobId,
       };
-      const result = await applicationsCollection.find(query).toArray();
+      const result = await resumeCollection.find(query).toArray();
       res.send({ isApplied: result.length });
     });
 
@@ -438,7 +454,7 @@ async function run() {
         query.location = { $regex: new RegExp(location, "i") };
       }
 
-      const sortOptions = isPreference ? { viewCount: -1 } : {};
+      const sortOptions = isPreference ? { appliedCount: -1, posted_date: -1 } : {posted_date: -1};
       const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
