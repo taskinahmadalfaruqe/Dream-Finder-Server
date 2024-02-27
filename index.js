@@ -38,13 +38,16 @@ const client = new MongoClient(uri, {
 });
 
 const applicationSubmissionDbUri = `mongodb+srv://service-squad:LfgXUdOgFlY0bo3b@cluster0.3azmgms.mongodb.net/?retryWrites=true&w=majority`;
-const applicationSubmissionDbClient = new MongoClient(applicationSubmissionDbUri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+const applicationSubmissionDbClient = new MongoClient(
+  applicationSubmissionDbUri,
+  {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  }
+);
 
 //  FUNCTION
 function formatDate(date) {
@@ -75,8 +78,8 @@ async function run() {
       .collection("blockEmails");
 
     const resumeCollection = applicationSubmissionDbClient
-    .db("serviceSquadDB")
-    .collection("newResume");
+      .db("serviceSquadDB")
+      .collection("newResume");
 
     const verifyToken = (req, res, next) => {
       const tokenWithBearer = req?.headers?.authorization;
@@ -200,13 +203,9 @@ async function run() {
 
     // create user
     app.post("/create/user", async (req, res) => {
-      // get user email form client side
       const user = req.body;
-      // create user email query
       const query = { email: user.email };
-      // get user from DB
       const isUserExist = await userCollection.findOne(query);
-      // if user already exist in DB, then return with insertedId: null
       if (isUserExist) {
         return res.send({
           message: "user already exists in DreamFinder",
@@ -224,6 +223,27 @@ async function run() {
       res.send(result);
     });
 
+    // GET SINGLE USER
+    app.get("/user/:email", async (req, res) => {
+      const { email } = req.params;
+      const query = {
+        email:email,
+      };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+
+    // GET USER APPLIED JOB AND BOOKMARK
+    app.get("/user-stat/:user", async(req, res)=>{
+      const { user } = req.params;
+      const query = {
+        user
+      };
+      const applicationCount = await resumeCollection.countDocuments(query)
+      const bookmarkCount = await bookmarks.countDocuments(query)
+      res.send({applicationCount, bookmarkCount})
+    })
+
     // delete a single user
     app.delete("/delete/user/:id", async (req, res) => {
       const id = req.params.id;
@@ -234,16 +254,16 @@ async function run() {
 
     // update user info
     app.put("/update/user/:email", async (req, res) => {
-      const email = req.params.email;
-      const userInfo = req.body;
+      
+      const {name, email, location, education, portfolio, linkedin } = req.body;
       const filter = { email: email };
-      const options = { upsert: true };
-      const result = await userCollection.updateOne(
-        filter,
-        { $set: userInfo },
-        options
-      );
-      res.send(result);
+      const updatedDoc = {
+        $set:{
+          name, email, portfolio, education, location, linkedin
+        }
+      }
+      const result = await userCollection.updateOne(filter, updatedDoc)
+      res.send(result)
     });
 
     // make admin
@@ -341,7 +361,7 @@ async function run() {
     // GET ALL APPLICATIONS IDS
     app.get("/retrieveResume", async (req, res) => {
       const { user, page } = req.query;
-      const pageNumber = Number(page)
+      const pageNumber = Number(page);
       const query = {
         user,
       };
@@ -353,10 +373,10 @@ async function run() {
         .limit(8)
         .toArray();
       if (result) {
-        result.map(item => ids.push(item._id.toString()));
+        result.map((item) => ids.push(item._id.toString()));
       }
-      const count = await resumeCollection.countDocuments(query)
-      res.send({ ids, count});
+      const count = await resumeCollection.countDocuments(query);
+      res.send({ ids, count });
     });
 
     // GET SINGLE APPLICATION INFO
@@ -420,7 +440,7 @@ async function run() {
 
       let typeArray;
       if (type) {
-        typeArray = type.split(",").map(item => item);
+        typeArray = type.split(",").map((item) => item);
       }
 
       const query = {};
@@ -453,7 +473,9 @@ async function run() {
         query.location = { $regex: new RegExp(location, "i") };
       }
 
-      const sortOptions = isPreference ? { appliedCount: -1, posted_date: -1 } : {posted_date: -1};
+      const sortOptions = isPreference
+        ? { appliedCount: -1, posted_date: -1 }
+        : { posted_date: -1 };
       const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
@@ -628,10 +650,12 @@ async function run() {
       });
     });
 
-    app.get("/", (req, res) => {
+    app.get("/", async (req, res) => {
+    
       res.send({ message: "Welcome To Dream Finder Server" });
     });
 
+    // INCREMENT APPLIED COUNT
     app.patch("/incrementAppliedCount/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
