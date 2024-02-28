@@ -227,22 +227,22 @@ async function run() {
     app.get("/user/:email", async (req, res) => {
       const { email } = req.params;
       const query = {
-        email:email,
+        email: email,
       };
       const result = await userCollection.findOne(query);
       res.send(result);
     });
 
     // GET USER APPLIED JOB AND BOOKMARK
-    app.get("/user-stat/:user", async(req, res)=>{
+    app.get("/user-stat/:user", async (req, res) => {
       const { user } = req.params;
       const query = {
-        user
+        user,
       };
-      const applicationCount = await resumeCollection.countDocuments(query)
-      const bookmarkCount = await bookmarks.countDocuments(query)
-      res.send({applicationCount, bookmarkCount})
-    })
+      const applicationCount = await resumeCollection.countDocuments(query);
+      const bookmarkCount = await bookmarks.countDocuments(query);
+      res.send({ applicationCount, bookmarkCount });
+    });
 
     // delete a single user
     app.delete("/delete/user/:id", async (req, res) => {
@@ -254,16 +254,21 @@ async function run() {
 
     // update user info
     app.put("/update/user/:email", async (req, res) => {
-      
-      const {name, email, location, education, portfolio, linkedin } = req.body;
+      const { name, email, location, education, portfolio, linkedin } =
+        req.body;
       const filter = { email: email };
       const updatedDoc = {
-        $set:{
-          name, email, portfolio, education, location, linkedin
-        }
-      }
-      const result = await userCollection.updateOne(filter, updatedDoc)
-      res.send(result)
+        $set: {
+          name,
+          email,
+          portfolio,
+          education,
+          location,
+          linkedin,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     });
 
     // make admin
@@ -373,7 +378,7 @@ async function run() {
         .limit(8)
         .toArray();
       if (result) {
-        result.map((item) => ids.push(item._id.toString()));
+        result.map(item => ids.push(item._id.toString()));
       }
       const count = await resumeCollection.countDocuments(query);
       res.send({ ids, count });
@@ -440,7 +445,7 @@ async function run() {
 
       let typeArray;
       if (type) {
-        typeArray = type.split(",").map((item) => item);
+        typeArray = type.split(",").map(item => item);
       }
 
       const query = {};
@@ -541,6 +546,23 @@ async function run() {
       const result = await jobsCollection.insertOne(data);
       res.send(result);
     });
+
+    app.put(
+      "/api/v1/update-job/:id",
+      verifyToken,
+      verifyHr,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedInfo = req.body;
+        console.log(updatedInfo);
+        const updatedDoc = {
+          $set: updatedInfo,
+        };
+        const result = await jobsCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      }
+    );
 
     app.delete(
       "/api/v1/delete-job/:id",
@@ -651,7 +673,6 @@ async function run() {
     });
 
     app.get("/", async (req, res) => {
-    
       res.send({ message: "Welcome To Dream Finder Server" });
     });
 
