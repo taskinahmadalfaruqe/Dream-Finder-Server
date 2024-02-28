@@ -3,7 +3,9 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const stripe = require('stripe')('sk_test_51OEQAXCnHb1beKhZJJgjGjfouvPkTRf3ueIAkXIlPAjmg6b24VD9gfUGFI18rs5KJxRicOVO0tq1ZA7ABCKkmhNv00hK2IfRut')
+const stripe = require("stripe")(
+  "sk_test_51OEQAXCnHb1beKhZJJgjGjfouvPkTRf3ueIAkXIlPAjmg6b24VD9gfUGFI18rs5KJxRicOVO0tq1ZA7ABCKkmhNv00hK2IfRut"
+);
 require("dotenv").config();
 
 const port = process.env.PORT || 5000;
@@ -35,6 +37,18 @@ const client = new MongoClient(uri, {
   },
 });
 
+const applicationSubmissionDbUri = `mongodb+srv://service-squad:LfgXUdOgFlY0bo3b@cluster0.3azmgms.mongodb.net/?retryWrites=true&w=majority`;
+const applicationSubmissionDbClient = new MongoClient(
+  applicationSubmissionDbUri,
+  {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  }
+);
+
 //  FUNCTION
 function formatDate(date) {
   const year = date.getFullYear();
@@ -55,9 +69,17 @@ async function run() {
       .collection("applications");
     const jobsCollection = client.db("DreamFinder").collection("jobs");
     const bookmarks = client.db("DreamFinder").collection("bookmarks");
-    const feedbacksCollection = client.db("DreamFinder").collection("feedbacks");
+    const feedbacksCollection = client
+      .db("DreamFinder")
+      .collection("feedbacks");
     const contactsCollection = client.db("DreamFinder").collection("contacts");
-    const blockEmailCollection = client.db("DreamFinder").collection("blockEmails");
+    const blockEmailCollection = client
+      .db("DreamFinder")
+      .collection("blockEmails");
+
+    const resumeCollection = applicationSubmissionDbClient
+      .db("serviceSquadDB")
+      .collection("newResume");
 
     const verifyToken = (req, res, next) => {
       const tokenWithBearer = req?.headers?.authorization;
@@ -154,19 +176,18 @@ async function run() {
     ///////////     JWT     //////////
 
     // payment intent
-    app.post('/createPayment', async (req, res) => {
+    app.post("/createPayment", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
-      console.log(amount)
+      console.log(amount);
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
-        currency: 'usd',
-        payment_method_types: ['card']
+        currency: "usd",
+        payment_method_types: ["card"],
       });
       res.send({
-        clientSecret: paymentIntent.client_secret
+        clientSecret: paymentIntent.client_secret,
       });
-
     });
 
     // create jwt token
@@ -182,13 +203,9 @@ async function run() {
 
     // create user
     app.post("/create/user", async (req, res) => {
-      // get user email form client side
       const user = req.body;
-      // create user email query
       const query = { email: user.email };
-      // get user from DB
       const isUserExist = await userCollection.findOne(query);
-      // if user already exist in DB, then return with insertedId: null
       if (isUserExist) {
         return res.send({
           message: "user already exists in DreamFinder",
@@ -206,9 +223,30 @@ async function run() {
       res.send(result);
     });
 
+    // GET SINGLE USER
+    app.get("/user/:email", async (req, res) => {
+      const { email } = req.params;
+      const query = {
+        email:email,
+      };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+
+    // GET USER APPLIED JOB AND BOOKMARK
+    app.get("/user-stat/:user", async(req, res)=>{
+      const { user } = req.params;
+      const query = {
+        user
+      };
+      const applicationCount = await resumeCollection.countDocuments(query)
+      const bookmarkCount = await bookmarks.countDocuments(query)
+      res.send({applicationCount, bookmarkCount})
+    })
+
     // delete a single user
     app.delete("/delete/user/:id", async (req, res) => {
-      const id = req.params.id
+      const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
       res.send(result);
@@ -216,16 +254,16 @@ async function run() {
 
     // update user info
     app.put("/update/user/:email", async (req, res) => {
-      const email = req.params.email;
-      const userInfo = req.body;
+      
+      const {name, email, location, education, portfolio, linkedin } = req.body;
       const filter = { email: email };
-      const options = { upsert: true };
-      const result = await userCollection.updateOne(
-        filter,
-        { $set: userInfo },
-        options
-      );
-      res.send(result);
+      const updatedDoc = {
+        $set:{
+          name, email, portfolio, education, location, linkedin
+        }
+      }
+      const result = await userCollection.updateOne(filter, updatedDoc)
+      res.send(result)
     });
 
     // make admin
@@ -241,7 +279,7 @@ async function run() {
       res.send(result);
     });
 
-     // User block
+    // User block
     app.patch("/users/block/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -254,9 +292,8 @@ async function run() {
       res.send(result);
     });
 
-
-     // company block
-     app.patch("/company/block/:id", async (req, res) => {
+    // company block
+    app.patch("/company/block/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -268,20 +305,19 @@ async function run() {
       res.send(result);
     });
 
-     // get all block emails
-     app.get("/block/email", async (req, res) => {
+    // get all block emails
+    app.get("/block/email", async (req, res) => {
       const result = await blockEmailCollection.find().toArray();
       res.send(result);
     });
 
+    // block email collections
 
-    // block email collections 
-
-    app.post('/block/email',async(req,res)=>{
-      const email = req.body
+    app.post("/block/email", async (req, res) => {
+      const email = req.body;
       const result = await blockEmailCollection.insertOne(email);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     ///////////     COMPANY     //////////
 
@@ -306,11 +342,10 @@ async function run() {
       res.send(result);
     });
 
-
     // delete a single company entries from db
     app.delete("/delete/company/:id", async (req, res) => {
-      const id = req.params.id
-      console.log(id)
+      const id = req.params.id;
+      console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await companyCollection.deleteOne(query);
       res.send(result);
@@ -319,26 +354,29 @@ async function run() {
     // UPLOAD RESUME AND COVER LETTER
     app.post("/uploadResume", async (req, res) => {
       const data = req.body;
-      const result = await applicationsCollection.insertOne(data);
+      const result = await resumeCollection.insertOne(data);
       res.status(200).send(result);
     });
 
     // GET ALL APPLICATIONS IDS
     app.get("/retrieveResume", async (req, res) => {
-      const { user } = req.query;
+      const { user, page } = req.query;
+      const pageNumber = Number(page);
       const query = {
         user,
       };
       let ids = [];
-      const result = await applicationsCollection
+      const result = await resumeCollection
         .find(query)
         .sort({ appliedDate: -1 })
+        .skip((pageNumber - 1) * 8)
+        .limit(8)
         .toArray();
       if (result) {
         result.map((item) => ids.push(item._id.toString()));
       }
-
-      res.send(ids);
+      const count = await resumeCollection.countDocuments(query);
+      res.send({ ids, count });
     });
 
     // GET SINGLE APPLICATION INFO
@@ -347,17 +385,15 @@ async function run() {
       const query = {
         _id: new ObjectId(id),
       };
-      const result = await applicationsCollection.findOne(query);
+      const result = await resumeCollection.findOne(query);
       res.send({ result });
     });
 
-
-     // get all jobs info
-     app.get("/get/jobs", async (req, res) => {
+    // get all jobs info
+    app.get("/get/jobs", async (req, res) => {
       const result = await jobsCollection.find().toArray();
       res.send(result);
     });
-
 
     // GET SINGLE JOB INFO
     app.get("/jobDetails/:id", async (req, res) => {
@@ -366,10 +402,9 @@ async function run() {
       res.send(result);
     });
 
-
-     // delete a single job from db
-     app.delete("/get/jobs/:id", async (req, res) => {
-      const id = req.params.id
+    // delete a single job from db
+    app.delete("/get/jobs/:id", async (req, res) => {
+      const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await jobsCollection.deleteOne(query);
       res.send(result);
@@ -382,7 +417,7 @@ async function run() {
         user,
         jobId,
       };
-      const result = await applicationsCollection.find(query).toArray();
+      const result = await resumeCollection.find(query).toArray();
       res.send({ isApplied: result.length });
     });
 
@@ -438,7 +473,9 @@ async function run() {
         query.location = { $regex: new RegExp(location, "i") };
       }
 
-      const sortOptions = isPreference ? { viewCount: -1 } : {};
+      const sortOptions = isPreference
+        ? { appliedCount: -1, posted_date: -1 }
+        : { posted_date: -1 };
       const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
@@ -505,16 +542,34 @@ async function run() {
       res.send(result);
     });
 
+    app.delete(
+      "/api/v1/delete-job/:id",
+      verifyToken,
+      verifyHr,
+      async (req, res) => {
+        console.log("HIT: /api/v1/delete-job/:id");
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await jobsCollection.deleteOne(query);
+        console.log("job deleted successfully");
+        res.send(result);
+      }
+    );
+
     ///////////     BOOKMARKS     //////////
 
     // GET USER'S BOOKMARKS
     app.get("/bookmark/:user", async (req, res) => {
       const { user } = req.params;
-      const { page } = req.query
-      const pageNumber = Number(page)
+      const { page } = req.query;
+      const pageNumber = Number(page);
       const query = { user };
-      const count = await bookmarks.find(query).toArray()
-      const result = await bookmarks.find(query).skip((pageNumber - 1) * 7).limit(7).toArray();
+      const count = await bookmarks.find(query).toArray();
+      const result = await bookmarks
+        .find(query)
+        .skip((pageNumber - 1) * 7)
+        .limit(7)
+        .toArray();
       res.send({ bookmarks: result, count: count.length });
     });
 
@@ -557,10 +612,10 @@ async function run() {
 
     // get contacts
     app.get("/contacts", async (req, res) => {
-      const cursor = contactsCollection.find()
+      const cursor = contactsCollection.find();
       const result = await cursor.toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     // post to Feedback
 
@@ -571,46 +626,49 @@ async function run() {
     });
 
     // get FeedBack
-    
-    app.get('/feedbacks', async(req,res) => {
-      const cursor = feedbacksCollection.find()
+
+    app.get("/feedbacks", async (req, res) => {
+      const cursor = feedbacksCollection.find();
       const result = await cursor.toArray();
       res.send(result);
-  })
+    });
 
-    // stat count 
-    app.get('/admin-stats', async (req, res) => {
-      const applicants = await userCollection.estimatedDocumentCount()
-      const companies = await companyCollection.estimatedDocumentCount()
-      const applications = await applicationsCollection.estimatedDocumentCount()
-      const jobs = await jobsCollection.countDocuments()
-      const listOfBookmarks = await bookmarks.countDocuments()
+    // stat count
+    app.get("/admin-stats", async (req, res) => {
+      const applicants = await userCollection.estimatedDocumentCount();
+      const companies = await companyCollection.estimatedDocumentCount();
+      const applications =
+        await applicationsCollection.estimatedDocumentCount();
+      const jobs = await jobsCollection.countDocuments();
+      const listOfBookmarks = await bookmarks.countDocuments();
       res.send({
         applicants,
         companies,
         applications,
         jobs,
-        listOfBookmarks
-      })
-    })
+        listOfBookmarks,
+      });
+    });
 
-    app.get("/", (req, res) => {
+    app.get("/", async (req, res) => {
+    
       res.send({ message: "Welcome To Dream Finder Server" });
     });
 
+    // INCREMENT APPLIED COUNT
     app.patch("/incrementAppliedCount/:id", async (req, res) => {
-      const { id } = req.params
-      const query = { _id: new ObjectId(id) }
-      const appliedPost = await jobsCollection.findOne(query)
-      const prevAppliedCount = appliedPost.appliedCount
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const appliedPost = await jobsCollection.findOne(query);
+      const prevAppliedCount = appliedPost.appliedCount;
       const updatedCount = {
         $set: {
-          appliedCount: prevAppliedCount + 1
-        }
-      }
-      const result = await jobsCollection.updateOne(query, updatedCount)
-      res.send(result)
-    })
+          appliedCount: prevAppliedCount + 1,
+        },
+      };
+      const result = await jobsCollection.updateOne(query, updatedCount);
+      res.send(result);
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
