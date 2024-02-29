@@ -394,7 +394,7 @@ async function run() {
         .limit(8)
         .toArray();
       if (result) {
-        result.map((item) => ids.push(item._id.toString()));
+        result.map(item => ids.push(item._id.toString()));
       }
       const count = await resumeCollection.countDocuments(query);
       res.send({ ids, count });
@@ -461,7 +461,7 @@ async function run() {
 
       let typeArray;
       if (type) {
-        typeArray = type.split(",").map((item) => item);
+        typeArray = type.split(",").map(item => item);
       }
 
       const query = {};
@@ -562,6 +562,23 @@ async function run() {
       const result = await jobsCollection.insertOne(data);
       res.send(result);
     });
+
+    app.put(
+      "/api/v1/update-job/:id",
+      verifyToken,
+      verifyHr,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedInfo = req.body;
+        console.log(updatedInfo);
+        const updatedDoc = {
+          $set: updatedInfo,
+        };
+        const result = await jobsCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      }
+    );
 
     app.delete(
       "/api/v1/delete-job/:id",
@@ -672,8 +689,7 @@ async function run() {
     });
 
     app.get("/", async (req, res) => {
-    
-      res.send({message:"Well to Dream Finder"});
+      res.send({ message: "Welcome To Dream Finder Server" });
     });
 
     // INCREMENT APPLIED COUNT
