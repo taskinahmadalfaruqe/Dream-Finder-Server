@@ -204,17 +204,33 @@ async function run() {
     // create user
     app.post("/create/user", async (req, res) => {
       const user = req.body;
-      const query = { email: user.email };
-      const isUserExist = await userCollection.findOne(query);
-      if (isUserExist) {
-        return res.send({
-          message: "user already exists in DreamFinder",
-          insertedId: null,
-        });
+      const queryEmail = { email: user.email };
+      const queryName = { name: user.name };
+      const isUserExist = await userCollection.findOne(queryEmail);
+      const isCompanyExist = await userCollection.findOne(queryName);
+      if (user.role === "hr") {
+        if (isUserExist || isCompanyExist) {
+          console.log("Company already exists in DreamFinder");
+          return res.send({
+            message: "Company already exists in DreamFinder",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      } else {
+        if (isUserExist) {
+          console.log("user already exists in DreamFinder");
+          return res.send({
+            message: "user already exists in DreamFinder",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
       }
+
       // if user don't exist in DB, then insert user in DB
-      const result = await userCollection.insertOne(user);
-      res.send(result);
     });
 
     // get all user
