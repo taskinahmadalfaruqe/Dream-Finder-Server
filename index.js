@@ -208,17 +208,33 @@ async function run() {
     // create user
     app.post("/create/user", async (req, res) => {
       const user = req.body;
-      const query = { email: user.email };
-      const isUserExist = await userCollection.findOne(query);
-      if (isUserExist) {
-        return res.send({
-          message: "user already exists in DreamFinder",
-          insertedId: null,
-        });
+      const queryEmail = { email: user.email };
+      const queryName = { name: user.name };
+      const isUserExist = await userCollection.findOne(queryEmail);
+      const isCompanyExist = await userCollection.findOne(queryName);
+      if (user.role === "hr") {
+        if (isUserExist || isCompanyExist) {
+          console.log("Company already exists in DreamFinder");
+          return res.send({
+            message: "Company already exists in DreamFinder",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      } else {
+        if (isUserExist) {
+          console.log("user already exists in DreamFinder");
+          return res.send({
+            message: "user already exists in DreamFinder",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
       }
+
       // if user don't exist in DB, then insert user in DB
-      const result = await userCollection.insertOne(user);
-      res.send(result);
     });
 
     // get all user
@@ -407,11 +423,7 @@ async function run() {
       if (result) {
         result.map(item => ids.push(item._id.toString()));
       }
-<<<<<<< HEAD
-      const count = await resumeCollection.countDocuments(query)
-=======
       const count = await resumeCollection.countDocuments(query);
->>>>>>> 4d1cd504a824be8acbb140e97f79fe3fc64b58b5
       res.send({ ids, count });
     });
 
@@ -509,13 +521,9 @@ async function run() {
         query.location = { $regex: new RegExp(location, "i") };
       }
 
-<<<<<<< HEAD
-      const sortOptions = isPreference ? { appliedCount: -1, posted_date: -1 } : { posted_date: -1 };
-=======
       const sortOptions = isPreference
         ? { appliedCount: -1, posted_date: -1 }
         : { posted_date: -1 };
->>>>>>> 4d1cd504a824be8acbb140e97f79fe3fc64b58b5
       const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
@@ -573,6 +581,16 @@ async function run() {
       res.send(result);
     });
 
+    // GET COMPANY'S  ALL APPLIED JOB
+    app.get("/company-applied-job/:company", async(req, res)=>{
+      const {company} = req.params
+      const query = {
+        company_name: company
+      }
+      const result = await resumeCollection.find(query).project({resume: 0}).toArray()
+      res.send(result)
+    })
+
     // POST A NEW JOB
     app.post("/api/v1/post-job", verifyToken, verifyHr, async (req, res) => {
       const data = req.body;
@@ -581,6 +599,7 @@ async function run() {
       const result = await jobsCollection.insertOne(data);
       res.send(result);
     });
+
 
     app.put(
       "/api/v1/update-job/:id",
@@ -707,9 +726,7 @@ async function run() {
       });
     });
 
-    app.get("/", async (req, res) => {
-      res.send({ message: "Welcome To Dream Finder Server" });
-    });
+  
 
     // INCREMENT APPLIED COUNT
     app.patch("/incrementAppliedCount/:id", async (req, res) => {
@@ -724,6 +741,15 @@ async function run() {
       };
       const result = await jobsCollection.updateOne(query, updatedCount);
       res.send(result);
+    });
+
+
+
+
+
+    app.get("/", async (req, res) => {
+
+      res.send({message:"Welcome To Dream Finder"})
     });
 
     console.log(
