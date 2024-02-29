@@ -29,6 +29,7 @@ app.use(cors(corsConfig));
 //MONGODB CONNECTION
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
 
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -80,6 +81,9 @@ async function run() {
     const resumeCollection = applicationSubmissionDbClient
       .db("serviceSquadDB")
       .collection("newResume");
+    const paymentCollection = client
+      .db("DreamFinder")
+      .collection("paymentCollection");
 
     const verifyToken = (req, res, next) => {
       const tokenWithBearer = req?.headers?.authorization;
@@ -297,6 +301,29 @@ async function run() {
       res.send(result);
     });
 
+
+    // User payment update K
+    app.patch("/users/update/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const body = req.body;
+      const updatedDoc = {
+        $set: {
+          ...body
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+      console.log(result);
+    });
+
+    // post paymentinfo
+    app.post("/users/paymentInfo", async (req, res) => {
+      const paymentInfo = req.body;
+      const result = await paymentCollection.insertOne(paymentInfo);
+      res.send(result);
+    });
+
     // company block
     app.patch("/company/block/:id", async (req, res) => {
       const id = req.params.id;
@@ -380,7 +407,11 @@ async function run() {
       if (result) {
         result.map(item => ids.push(item._id.toString()));
       }
+<<<<<<< HEAD
+      const count = await resumeCollection.countDocuments(query)
+=======
       const count = await resumeCollection.countDocuments(query);
+>>>>>>> 4d1cd504a824be8acbb140e97f79fe3fc64b58b5
       res.send({ ids, count });
     });
 
@@ -478,9 +509,13 @@ async function run() {
         query.location = { $regex: new RegExp(location, "i") };
       }
 
+<<<<<<< HEAD
+      const sortOptions = isPreference ? { appliedCount: -1, posted_date: -1 } : { posted_date: -1 };
+=======
       const sortOptions = isPreference
         ? { appliedCount: -1, posted_date: -1 }
         : { posted_date: -1 };
+>>>>>>> 4d1cd504a824be8acbb140e97f79fe3fc64b58b5
       const foundedJobs = await jobsCollection.find(query).toArray();
       const result = await jobsCollection
         .find(query)
