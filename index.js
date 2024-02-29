@@ -554,6 +554,16 @@ async function run() {
       res.send(result);
     });
 
+    // GET COMPANY'S  ALL APPLIED JOB
+    app.get("/company-applied-job/:company", async(req, res)=>{
+      const {company} = req.params
+      const query = {
+        company_name: company
+      }
+      const result = await resumeCollection.find(query).project({resume: 0}).toArray()
+      res.send(result)
+    })
+
     // POST A NEW JOB
     app.post("/api/v1/post-job", verifyToken, verifyHr, async (req, res) => {
       const data = req.body;
@@ -562,6 +572,7 @@ async function run() {
       const result = await jobsCollection.insertOne(data);
       res.send(result);
     });
+
 
     app.put(
       "/api/v1/update-job/:id",
@@ -688,9 +699,7 @@ async function run() {
       });
     });
 
-    app.get("/", async (req, res) => {
-      res.send({ message: "Welcome To Dream Finder Server" });
-    });
+  
 
     // INCREMENT APPLIED COUNT
     app.patch("/incrementAppliedCount/:id", async (req, res) => {
@@ -705,6 +714,15 @@ async function run() {
       };
       const result = await jobsCollection.updateOne(query, updatedCount);
       res.send(result);
+    });
+
+
+
+
+
+    app.get("/", async (req, res) => {
+
+      res.send({message:"Welcome To Dream Finder"})
     });
 
     console.log(
