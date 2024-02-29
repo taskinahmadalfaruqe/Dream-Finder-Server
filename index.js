@@ -204,17 +204,33 @@ async function run() {
     // create user
     app.post("/create/user", async (req, res) => {
       const user = req.body;
-      const query = { email: user.email };
-      const isUserExist = await userCollection.findOne(query);
-      if (isUserExist) {
-        return res.send({
-          message: "user already exists in DreamFinder",
-          insertedId: null,
-        });
+      const queryEmail = { email: user.email };
+      const queryName = { name: user.name };
+      const isUserExist = await userCollection.findOne(queryEmail);
+      const isCompanyExist = await userCollection.findOne(queryName);
+      if (user.role === "hr") {
+        if (isUserExist || isCompanyExist) {
+          console.log("Company already exists in DreamFinder");
+          return res.send({
+            message: "Company already exists in DreamFinder",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      } else {
+        if (isUserExist) {
+          console.log("user already exists in DreamFinder");
+          return res.send({
+            message: "user already exists in DreamFinder",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
       }
+
       // if user don't exist in DB, then insert user in DB
-      const result = await userCollection.insertOne(user);
-      res.send(result);
     });
 
     // get all user
@@ -227,22 +243,22 @@ async function run() {
     app.get("/user/:email", async (req, res) => {
       const { email } = req.params;
       const query = {
-        email:email,
+        email: email,
       };
       const result = await userCollection.findOne(query);
       res.send(result);
     });
 
     // GET USER APPLIED JOB AND BOOKMARK
-    app.get("/user-stat/:user", async(req, res)=>{
+    app.get("/user-stat/:user", async (req, res) => {
       const { user } = req.params;
       const query = {
-        user
+        user,
       };
-      const applicationCount = await resumeCollection.countDocuments(query)
-      const bookmarkCount = await bookmarks.countDocuments(query)
-      res.send({applicationCount, bookmarkCount})
-    })
+      const applicationCount = await resumeCollection.countDocuments(query);
+      const bookmarkCount = await bookmarks.countDocuments(query);
+      res.send({ applicationCount, bookmarkCount });
+    });
 
     // delete a single user
     app.delete("/delete/user/:id", async (req, res) => {
@@ -254,16 +270,21 @@ async function run() {
 
     // update user info
     app.put("/update/user/:email", async (req, res) => {
-      
-      const {name, email, location, education, portfolio, linkedin } = req.body;
+      const { name, email, location, education, portfolio, linkedin } =
+        req.body;
       const filter = { email: email };
       const updatedDoc = {
-        $set:{
-          name, email, portfolio, education, location, linkedin
-        }
-      }
-      const result = await userCollection.updateOne(filter, updatedDoc)
-      res.send(result)
+        $set: {
+          name,
+          email,
+          portfolio,
+          education,
+          location,
+          linkedin,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     });
 
     // make admin
@@ -652,7 +673,7 @@ async function run() {
 
     app.get("/", async (req, res) => {
     
-      res.send({ message: "Welcome To Dream Finder Server" });
+      res.send({message:"Well to Dream Finder"});
     });
 
     // INCREMENT APPLIED COUNT
