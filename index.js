@@ -689,7 +689,17 @@ async function run() {
     });
 
     app.get("/", async (req, res) => {
-      res.send({ message: "Welcome To Dream Finder Server" });
+      // const query = {
+      //   company_name:"Skyline Engineering Services"
+      // }
+      // const updatedDoc = {
+      //   $set:{
+      //     email:"skyline@gmail.com"
+      //   }
+      // }
+      // const job = await jobsCollection.updateMany(query, updatedDoc)
+      // res.send(job);
+      res.send({message:"Welcome to Dream Finder"})
     });
 
     // INCREMENT APPLIED COUNT
