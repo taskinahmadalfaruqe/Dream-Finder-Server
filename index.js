@@ -407,11 +407,7 @@ async function run() {
       if (result) {
         result.map(item => ids.push(item._id.toString()));
       }
-<<<<<<< HEAD
       const count = await resumeCollection.countDocuments(query)
-=======
-      const count = await resumeCollection.countDocuments(query);
->>>>>>> 4d1cd504a824be8acbb140e97f79fe3fc64b58b5
       res.send({ ids, count });
     });
 
