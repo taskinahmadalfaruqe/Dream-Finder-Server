@@ -29,7 +29,6 @@ app.use(cors(corsConfig));
 //MONGODB CONNECTION
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.hyjkkob.mongodb.net/?retryWrites=true&w=majority`;
 
-
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -317,7 +316,6 @@ async function run() {
       res.send(result);
     });
 
-
     // User payment update K
     app.patch("/users/update/:email", async (req, res) => {
       const email = req.params.email;
@@ -325,7 +323,7 @@ async function run() {
       const body = req.body;
       const updatedDoc = {
         $set: {
-          ...body
+          ...body,
         },
       };
       const result = await userCollection.updateOne(filter, updatedDoc);
@@ -582,14 +580,17 @@ async function run() {
     });
 
     // GET COMPANY'S  ALL APPLIED JOB
-    app.get("/company-applied-job/:company", async(req, res)=>{
-      const {company} = req.params
+    app.get("/company-applied-job/:company", async (req, res) => {
+      const { company } = req.params;
       const query = {
-        company_name: company
-      }
-      const result = await resumeCollection.find(query).project({resume: 0}).toArray()
-      res.send(result)
-    })
+        company_name: company,
+      };
+      const result = await resumeCollection
+        .find(query)
+        .project({ resume: 0 })
+        .toArray();
+      res.send(result);
+    });
 
     // POST A NEW JOB
     app.post("/api/v1/post-job", verifyToken, verifyHr, async (req, res) => {
@@ -599,7 +600,6 @@ async function run() {
       const result = await jobsCollection.insertOne(data);
       res.send(result);
     });
-
 
     app.put(
       "/api/v1/update-job/:id",
@@ -614,6 +614,22 @@ async function run() {
           $set: updatedInfo,
         };
         const result = await jobsCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      }
+    );
+
+    app.put(
+      "/api/v1/change-job-status/:id",
+      verifyToken,
+      verifyHr,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedStatus = req.body.status;
+        const updatedDoc = {
+          $set: { status: updatedStatus },
+        };
+        const result = await resumeCollection.updateOne(filter, updatedDoc);
         res.send(result);
       }
     );
@@ -726,8 +742,6 @@ async function run() {
       });
     });
 
-  
-
     // INCREMENT APPLIED COUNT
     app.patch("/incrementAppliedCount/:id", async (req, res) => {
       const { id } = req.params;
@@ -743,13 +757,8 @@ async function run() {
       res.send(result);
     });
 
-
-
-
-
     app.get("/", async (req, res) => {
-
-      res.send({message:"Welcome To Dream Finder"})
+      res.send({ message: "Welcome To Dream Finder" });
     });
 
     console.log(
