@@ -705,9 +705,15 @@ async function run() {
 
     app.get("/feedbacks", async (req, res) => {
       const cursor = feedbacksCollection.find();
-      const result = await cursor.toArray();
+      const result = await cursor.sort({posted_date: 1}).toArray();
       res.send(result);
     });
+
+    app.post("/feedback",async (req, res)=>{
+      const feedback = req.body
+      const result = await feedbacksCollection.insertOne(feedback)
+      res.send(result)
+    })
 
     // stat count
     app.get("/admin-stats", async (req, res) => {
@@ -748,7 +754,6 @@ async function run() {
 
 
     app.get("/", async (req, res) => {
-
       res.send({message:"Welcome To Dream Finder"})
     });
 
