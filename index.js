@@ -7,8 +7,6 @@ const stripe = require("stripe")(
   "sk_test_51OEQAXCnHb1beKhZJJgjGjfouvPkTRf3ueIAkXIlPAjmg6b24VD9gfUGFI18rs5KJxRicOVO0tq1ZA7ABCKkmhNv00hK2IfRut"
 );
 require("dotenv").config();
-
-
 const port = process.env.PORT || 5000;
 
 //CORS CONFIG FILE
